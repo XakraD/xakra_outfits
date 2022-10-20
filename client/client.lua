@@ -19,7 +19,6 @@ RegisterNetEvent('xakra_outfit:LoadCloths')
 AddEventHandler('xakra_outfit:LoadCloths', function(cloths)
 	ClothesDB = json.decode(cloths)
 	for k, v in pairs(ClothesDB) do
-		-- clothesPlayer[k] = v
 		originalOutfit[k] = v
 	end
 end)
