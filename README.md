@@ -5,7 +5,7 @@
 - [menuapi](https://github.com/outsider31000/menuapi)
 
 ## Description
-With this script players will be able to change outfits anywhere they are near one of the item list. It will not be necessary to configure any camera, it will be important that the player does not have anything in front of him that can cover the view.
+With this script players will be able to change and delete outfits anywhere they are near one of the item list. It will not be necessary to configure any camera, it will be important that the player does not have anything in front of him that can cover the view.
 
 In the Config file you can configure:
 - Key to open the outfits menu
