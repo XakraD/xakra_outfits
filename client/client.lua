@@ -27,9 +27,6 @@ end)
 local OpenOutfitPrompt
 local OpenOutfitPrompts = GetRandomIntInRange(0, 0xffffff)
 
-local chest_id
-local chest_capacity
-
 function OutfitOpenMenuPrompt()
     local str = Config.Texts['Prompt']
     OpenOutfitPrompt = PromptRegisterBegin()
