@@ -202,7 +202,7 @@ function OutfitSubMenu(index, outfitId)
 				menu.close()
 				Wait(500)
 			elseif data.current.value == "delete" then
-                TriggerServerEvent("vorpclothingstore:deleteOutfit", outfitId);
+                TriggerServerEvent("xakra_outfit:deleteOutfit", outfitId);
                 OutfitsDB[index] = nil
 				PreviewOutfit(false)
 				OutfitMenu()
