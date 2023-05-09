@@ -197,13 +197,18 @@ function OutfitSubMenu(index, outfitId)
 
 			if data.current.value == "select" then
 				TriggerServerEvent("xakra_outfit:setOutfit", OutfitsDB[index].comps)
+
 				FreezeEntityPosition(PlayerPedId(), false)
-				DestroyAllCams(true)
+				ClearPedTasks(PlayerPedId())
+				if DoesCamExist(Cam) then
+					DestroyCam(Cam, true)
+				end
+
 				active_menu = false
 				menu.close()
 				Wait(500)
 			elseif data.current.value == "delete" then
-                TriggerServerEvent("xakra_outfit:deleteOutfit", outfitId);
+                TriggerServerEvent("xakra_outfit:deleteOutfit", outfitId)
                 OutfitsDB[index] = nil
 				PreviewOutfit(false)
 				OutfitMenu()
