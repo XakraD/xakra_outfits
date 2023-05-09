@@ -1,6 +1,7 @@
 local active_menu = false
 local pcoords, loadingData
 local OutfitsDB = {}
+local Cam
 
 TriggerEvent('menuapi:getData', function(call)
     MenuData = call
@@ -9,7 +10,7 @@ end)
 Citizen.CreateThread(function() 
     while true do
         pcoords = GetEntityCoords(PlayerPedId())
-        Citizen.Wait(500)
+        Wait(500)
     end
 end)
 
@@ -18,9 +19,7 @@ local originalOutfit = {}
 RegisterNetEvent('xakra_outfit:LoadCloths')
 AddEventHandler('xakra_outfit:LoadCloths', function(cloths)
 	ClothesDB = json.decode(cloths)
-	for k, v in pairs(ClothesDB) do
-		originalOutfit[k] = v
-	end
+	originalOutfit = json.decode(cloths)
 end)
 
 --########################### OPEN OBJECT ###########################
@@ -51,34 +50,32 @@ Citizen.CreateThread(function()
                 local label  = CreateVarString(10, 'LITERAL_STRING', Config.Texts['Closet'])
                 PromptSetActiveGroupThisFrame(OpenOutfitPrompts, label)
                 if PromptHasHoldModeCompleted(OpenOutfitPrompt) then
-                    Citizen.Wait(500)
+                    Wait(500)
 					TriggerServerEvent('xakra_outfit:GetOutfits')
                 end
-                Citizen.Wait(4)
+                Wait(4)
             end
         end
-        Citizen.Wait(500)
+        Wait(500)
     end
 end)
 
 
 RegisterNetEvent('xakra_outfit:LoadOutfits')
 AddEventHandler('xakra_outfit:LoadOutfits', function(result)
-	for i, outfit in pairs(result) do
-		OutfitsDB[i] = { title = outfit.title, comps = outfit.comps, id = outfit.id }
-	end
+	OutfitsDB = result
 	OutfitMenu()
 end)
 
 
 function DeleteOutfit(index, id)
-	TriggerServerEvent("xakra_outfit:deleteOutfit", id);
+	TriggerServerEvent("xakra_outfit:deleteOutfit", id)
 	OutfitsDB[index] = nil
 end
 
 function PreviewOutfit(index)
-	local playerPed, clothData = PlayerPedId()
-	loadingData = true
+	local clothData
+	local ped = PlayerPedId()
 
 	if not index then
 		clothData = originalOutfit
@@ -86,36 +83,32 @@ function PreviewOutfit(index)
 		clothData = json.decode(OutfitsDB[index].comps)
 	end
 
-	for k, v in pairs(clothData) do
-		local catHash = CategoryDBName[k]
-		if IsPedMale(playerPed) == "male" then
-			if v <= 0 then
-				if catHash == 0xE06D30CE then
-					Citizen.InvokeNative(0xD710A5007C2AC539, playerPed, 0x662AC34, 0)
-				end
-				Citizen.InvokeNative(0xD710A5007C2AC539, playerPed, catHash, 0);
-				Citizen.InvokeNative(0xCC8CA3E88256E58F, playerPed, 0, 1, 1, 1, 0);
-			else
-				if catHash == 0xE06D30CE then
-					Citizen.InvokeNative(0xD710A5007C2AC539, playerPed, 0x662AC34, 0)
-					Citizen.InvokeNative(0xCC8CA3E88256E58F, playerPed, 0, 1, 1, 1, 0);
-				end
-				Citizen.InvokeNative(0x59BD177A1A48600A, playerPed, catHash);
-				Citizen.InvokeNative(0xD3A7B003ED343FD9, playerPed, v, true, false, false);
-				Citizen.InvokeNative(0xD3A7B003ED343FD9, playerPed, v, true, true, false);
+	loadingData = true
+
+	local boots
+
+	for category, value in pairs(clothData) do
+		if value ~= -1 then
+			if category ~= "Boots" then
+				Citizen.InvokeNative(0x704C908E9C405136, ped)
+				Citizen.InvokeNative(0xAAB86462966168CE, ped, 1)
+				Citizen.InvokeNative(0xD3A7B003ED343FD9, ped, value, false, false, false)
+				Citizen.InvokeNative(0xD3A7B003ED343FD9, ped, value, true, true, false)
+			elseif category == "Boots" then
+				boots = value
 			end
 		else
-			if v <= 0 then
-				Citizen.InvokeNative(0xD710A5007C2AC539, playerPed, catHash, 0);
-				Citizen.InvokeNative(0xCC8CA3E88256E58F, playerPed, 0, 1, 1, 1, 0);
-			else
-				Citizen.InvokeNative(0x59BD177A1A48600A, playerPed, catHash);
-				Citizen.InvokeNative(0xD3A7B003ED343FD9, playerPed, v, true, false, true);
-				Citizen.InvokeNative(0xD3A7B003ED343FD9, playerPed, v, true, true, true);
-			end
+			local catHash = CategoryDBName[category]
+			Citizen.InvokeNative(0xD710A5007C2AC539, ped, catHash, 0)
 		end
-		Citizen.Wait(5)
 	end
+	-- loa boots for last so they dont clip with pants
+	if boots ~= -1 then
+		Citizen.InvokeNative(0xD3A7B003ED343FD9, ped, boots, false, false, false)
+		Citizen.InvokeNative(0xD3A7B003ED343FD9, ped, boots, true, true, false)
+	end
+
+	-- Citizen.InvokeNative(0xCC8CA3E88256E58F, ped, false, true, true, true, false)	-- UpdatePedVariation
 
 	loadingData = false
 end
@@ -124,11 +117,14 @@ function OutfitMenu()
 	MenuData.CloseAll()
 	active_menu = true
     FreezeEntityPosition(PlayerPedId(), true)
+	TaskStandStill(PlayerPedId(), -1)
 
-	local cam = CreateCam("DEFAULT_SCRIPTED_CAMERA", true) 
-	AttachCamToEntity(cam , PlayerPedId(), 0.20, 1.50, 0.20, true)
-	SetCamRot(cam, -10.0,0.0,GetEntityHeading(PlayerPedId())-180)
-    RenderScriptCams(true, true, 1000, 1, 0)
+	if not DoesCamExist(Cam) then
+		Cam = CreateCam("DEFAULT_SCRIPTED_CAMERA", true) 
+		AttachCamToEntity(Cam , PlayerPedId(), 0.20, 1.50, 0.20, true)
+		SetCamRot(Cam, -10.0,0.0,GetEntityHeading(PlayerPedId())-180)
+		RenderScriptCams(true, true, 1000, 1, 0)
+	end
 
 	local elements = {}
 
@@ -166,7 +162,12 @@ function OutfitMenu()
         menu.close()
         active_menu = false
         FreezeEntityPosition(PlayerPedId(), false)
-		DestroyAllCams(true)
+		ClearPedTasks(PlayerPedId())
+
+		if DoesCamExist(Cam) then
+			RenderScriptCams(false, true, 1000, 1, 0)
+			DestroyCam(Cam, true)
+		end
     end)
 end
 
@@ -220,7 +221,11 @@ AddEventHandler('onResourceStop', function (resourceName)
     if resourceName == GetCurrentResourceName() then
 		MenuData.CloseAll()
 		FreezeEntityPosition(PlayerPedId(), false)
-		DestroyAllCams(true)
+		ClearPedTasks(PlayerPedId())
+
+		if DoesCamExist(Cam) then
+			DestroyCam(Cam, true)
+		end
     end
 end)
 
@@ -236,7 +241,7 @@ CategoryDBName = {
 	CoatClosed = 0x0662AC34,
 	Poncho = 0xAF14310B,
 	Cloak = 0x3C1A74CD,
-	Gloves = 0xEABE0032,
+	Glove = 0xEABE0032,
 	RingRh = 0x7A6BBD0B,
 	RingLh = 0xF16A1D23,
 	Bracelet = 0x7BC10759,
