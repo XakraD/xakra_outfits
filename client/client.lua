@@ -87,6 +87,10 @@ function PreviewOutfit(index)
 
 	local boots
 
+	for _, hash in pairs(CategoryDBName) do
+		Citizen.InvokeNative(0xD710A5007C2AC539, ped, hash, 0)
+	end
+
 	for category, value in pairs(clothData) do
 		if value ~= -1 then
 			if category ~= "Boots" then
@@ -97,18 +101,13 @@ function PreviewOutfit(index)
 			elseif category == "Boots" then
 				boots = value
 			end
-		else
-			local catHash = CategoryDBName[category]
-			Citizen.InvokeNative(0xD710A5007C2AC539, ped, catHash, 0)
 		end
 	end
-	-- loa boots for last so they dont clip with pants
+
 	if boots ~= -1 then
 		Citizen.InvokeNative(0xD3A7B003ED343FD9, ped, boots, false, false, false)
 		Citizen.InvokeNative(0xD3A7B003ED343FD9, ped, boots, true, true, false)
 	end
-
-	-- Citizen.InvokeNative(0xCC8CA3E88256E58F, ped, false, true, true, true, false)	-- UpdatePedVariation
 
 	loadingData = false
 end
