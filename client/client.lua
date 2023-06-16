@@ -44,9 +44,9 @@ Citizen.CreateThread(function()
     OutfitOpenMenuPrompt()             
     while true do
         for _, object in pairs(Config.Objects) do
-            local check_object = DoesObjectOfTypeExistAtCoords(pcoords, 1.0, GetHashKey(object), true)
+            local check_object = DoesObjectOfTypeExistAtCoords(pcoords, 1.0, joaat(object), true)
             while check_object and not active_menu do
-                check_object = DoesObjectOfTypeExistAtCoords(pcoords, 1.0, GetHashKey(object), true)
+                check_object = DoesObjectOfTypeExistAtCoords(pcoords, 1.0, joaat(object), true)
                 local label  = CreateVarString(10, 'LITERAL_STRING', Config.Texts['Closet'])
                 PromptSetActiveGroupThisFrame(OpenOutfitPrompts, label)
                 if PromptHasHoldModeCompleted(OpenOutfitPrompt) then
@@ -85,28 +85,15 @@ function PreviewOutfit(index)
 
 	loadingData = true
 
-	local boots
-
 	for _, hash in pairs(CategoryDBName) do
 		Citizen.InvokeNative(0xD710A5007C2AC539, ped, hash, 0)
 	end
 
 	for category, value in pairs(clothData) do
 		if value ~= -1 then
-			if category ~= "Boots" then
-				Citizen.InvokeNative(0x704C908E9C405136, ped)
-				Citizen.InvokeNative(0xAAB86462966168CE, ped, 1)
-				Citizen.InvokeNative(0xD3A7B003ED343FD9, ped, value, false, false, false)
-				Citizen.InvokeNative(0xD3A7B003ED343FD9, ped, value, true, true, false)
-			elseif category == "Boots" then
-				boots = value
-			end
+			Citizen.InvokeNative(0xD3A7B003ED343FD9, ped, value, false, false, false)
+			Citizen.InvokeNative(0xD3A7B003ED343FD9, ped, value, true, true, false)
 		end
-	end
-
-	if boots ~= -1 then
-		Citizen.InvokeNative(0xD3A7B003ED343FD9, ped, boots, false, false, false)
-		Citizen.InvokeNative(0xD3A7B003ED343FD9, ped, boots, true, true, false)
 	end
 
 	loadingData = false
