@@ -2,7 +2,7 @@
 ## Requirements
 - [oxmysql](https://github.com/VORPCORE/oxmysql)
 - [vorp_character](https://github.com/VORPCORE/VORP-Character)
-- [menuapi](https://github.com/outsider31000/menuapi)
+- [vorp_menu](https://github.com/VORPCORE/vorp_menu)
 
 ## Description
 With this script players will be able to change and delete outfits anywhere they are near one of the item list. It will not be necessary to configure any camera, it will be important that the player does not have anything in front of him that can cover the view.
