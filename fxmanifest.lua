@@ -1,6 +1,5 @@
 author 'Xakra <Discord:Xakra#8145:https://discord.gg/kmsqB6xQjH>'
 version '1.0'
-description 'xakra_outfit'
 
 fx_version "adamant"
 lua54 "on"
@@ -18,12 +17,4 @@ client_scripts {
 
 server_scripts {
 	'server/server.lua',
-}
-
-dependency 'vorp_core'
-dependencies {
-    'vorp_core',
-    'oxmysql',
-    'vorp_character',
-	'menuapi',
 }
