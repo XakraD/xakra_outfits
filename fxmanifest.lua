@@ -12,6 +12,7 @@ shared_scripts {
 }
 
 client_scripts {
+	'@vorp_character/client/creator_functions.lua',
 	'client/client.lua',
 }
 

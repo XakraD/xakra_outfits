@@ -1,103 +1,68 @@
 local active_menu = false
-local pcoords, loadingData
+local pcoords
+
+local originalOutfit = {}
 local OutfitsDB = {}
+
 local Cam
 
 TriggerEvent('menuapi:getData', function(call)
     MenuData = call
 end)
 
-Citizen.CreateThread(function() 
+CreateThread(function() 
     while true do
         pcoords = GetEntityCoords(PlayerPedId())
         Wait(500)
     end
 end)
 
-local originalOutfit = {}
-
-RegisterNetEvent('xakra_outfit:LoadCloths')
-AddEventHandler('xakra_outfit:LoadCloths', function(cloths)
-	ClothesDB = json.decode(cloths)
-	originalOutfit = json.decode(cloths)
-end)
-
 --########################### OPEN OBJECT ###########################
 local OpenOutfitPrompt
 local OpenOutfitPrompts = GetRandomIntInRange(0, 0xffffff)
 
-function OutfitOpenMenuPrompt()
-    local str = Config.Texts['Prompt']
+CreateThread(function()
     OpenOutfitPrompt = PromptRegisterBegin()
     PromptSetControlAction(OpenOutfitPrompt, Config.OpenMenu)
-    str = CreateVarString(10, 'LITERAL_STRING', str)
-    PromptSetText(OpenOutfitPrompt, str)
-    PromptSetEnabled(OpenOutfitPrompt, 1)
-    PromptSetVisible(OpenOutfitPrompt, 1)
+    local VarString = CreateVarString(10, 'LITERAL_STRING', Config.Texts.Prompt)
+    PromptSetText(OpenOutfitPrompt, VarString)
+    PromptSetEnabled(OpenOutfitPrompt, true)
+    PromptSetVisible(OpenOutfitPrompt, true)
 	PromptSetHoldMode(OpenOutfitPrompt, 1000)
 	PromptSetGroup(OpenOutfitPrompt, OpenOutfitPrompts)
-	Citizen.InvokeNative(0xC5F428EE08FA7F2C,OpenOutfitPrompt,true)
 	PromptRegisterEnd(OpenOutfitPrompt)
-end
+end)
 
-Citizen.CreateThread(function() 
-    OutfitOpenMenuPrompt()             
+CreateThread(function()
     while true do
         for _, object in pairs(Config.Objects) do
             local check_object = DoesObjectOfTypeExistAtCoords(pcoords, 1.0, joaat(object), true)
+
             while check_object and not active_menu do
                 check_object = DoesObjectOfTypeExistAtCoords(pcoords, 1.0, joaat(object), true)
-                local label  = CreateVarString(10, 'LITERAL_STRING', Config.Texts['Closet'])
+
+                local label = CreateVarString(10, 'LITERAL_STRING', Config.Texts.Closet)
                 PromptSetActiveGroupThisFrame(OpenOutfitPrompts, label)
+
                 if PromptHasHoldModeCompleted(OpenOutfitPrompt) then
-                    Wait(500)
 					TriggerServerEvent('xakra_outfit:GetOutfits')
+					Wait(500)
                 end
-                Wait(4)
+				
+                Wait(0)
             end
         end
+
         Wait(500)
     end
 end)
 
-
 RegisterNetEvent('xakra_outfit:LoadOutfits')
-AddEventHandler('xakra_outfit:LoadOutfits', function(result)
+AddEventHandler('xakra_outfit:LoadOutfits', function(CharacterOutfit, result)
+	originalOutfit = CharacterOutfit
 	OutfitsDB = result
 	OutfitMenu()
 end)
-
-
-function DeleteOutfit(index, id)
-	TriggerServerEvent("xakra_outfit:deleteOutfit", id)
-	OutfitsDB[index] = nil
-end
-
-function PreviewOutfit(index)
-	local clothData
-	local ped = PlayerPedId()
-
-	if not index then
-		clothData = originalOutfit
-	else
-		clothData = json.decode(OutfitsDB[index].comps)
-	end
-
-	loadingData = true
-
-	for _, hash in pairs(CategoryDBName) do
-		Citizen.InvokeNative(0xD710A5007C2AC539, ped, hash, 0)
-	end
-
-	for category, value in pairs(clothData) do
-		if value ~= -1 then
-			Citizen.InvokeNative(0xD3A7B003ED343FD9, ped, value, false, false, false)
-			Citizen.InvokeNative(0xD3A7B003ED343FD9, ped, value, true, true, false)
-		end
-	end
-
-	loadingData = false
-end
 
 function OutfitMenu()
 	MenuData.CloseAll()
@@ -108,7 +73,7 @@ function OutfitMenu()
 	if not DoesCamExist(Cam) then
 		Cam = CreateCam("DEFAULT_SCRIPTED_CAMERA", true) 
 		AttachCamToEntity(Cam , PlayerPedId(), 0.20, 1.50, 0.20, true)
-		SetCamRot(Cam, -10.0,0.0,GetEntityHeading(PlayerPedId())-180)
+		SetCamRot(Cam, -10.0, 0.0, GetEntityHeading(PlayerPedId()) - 180)
 		RenderScriptCams(true, true, 1000, 1, 0)
 	end
 
@@ -125,22 +90,20 @@ function OutfitMenu()
 		elements[#elements + 1] = {
 			label = outfitName,
 			value = i,
-			id = v.id
 		}
 	end
 
 	MenuData.Open('default', GetCurrentResourceName(), "OutfitMenu",
 		{
-			title    = Config.Texts['Closet'],
-			subtext  = Config.Texts['SubMenu'],
+			title    = Config.Texts.Closet,
+			subtext  = Config.Texts.SubMenu,
 			align    = Config.Align,
 			elements = elements,
 		},
 
 		function(data, menu)
 			if data.current.value and not loadingData then
-				PreviewOutfit(data.current.value)
-				OutfitSubMenu(data.current.value, data.current.id)
+				OutfitSubMenu(data.current.value)
 			end
 		end,
 
@@ -157,19 +120,26 @@ function OutfitMenu()
     end)
 end
 
-function OutfitSubMenu(index, outfitId)
+function OutfitSubMenu(index)
 	MenuData.CloseAll()
-	local elements = {}
-	local selectedOutfit, id = index, outfitId
 
-	elements = {
-		{ label = Config.Texts['SelectOutfit'], value = "select" },
-		{ label = Config.Texts['DeleteOutfit'], value = "delete" }
+	PreviewOutfit(OutfitsDB[index])
+
+	local elements = {
+		{
+			label = Config.Texts.SelectOutfit,
+			value = "select",
+		},
+		{
+			label = Config.Texts.DeleteOutfit,
+			value = "delete"
+		},
 	}
+
 	MenuData.Open('default', GetCurrentResourceName(), "OutfitSubMenu",
 		{
-			title    = Config.Texts['Closet'],
-			subtext  = Config.Texts['SubMenu'],
+			title    = Config.Texts.Closet,
+			subtext  = Config.Texts.SubMenu,
 			align    = Config.Align,
 			elements = elements,
             lastmenu = "OutfitMenu",
@@ -178,15 +148,25 @@ function OutfitSubMenu(index, outfitId)
 		function(data, menu)
             if (data.current == "backup") then
                 _G[data.trigger]()
-				PreviewOutfit(false)
+				PreviewOutfit(originalOutfit)
             end
 
 			if data.current.value == "select" then
-				TriggerServerEvent("xakra_outfit:setOutfit", OutfitsDB[index].comps)
+				local comps = {}
+
+				for k, v in pairs(OutfitsDB[index].comps and json.decode(OutfitsDB[index].comps) or {}) do
+					comps[k] = { comp = v }
+				end
+			
+				local compTints = OutfitsDB[index].compTints and json.decode(OutfitsDB[index].compTints) or {}
+
+				TriggerServerEvent("xakra_outfit:setOutfit", OutfitsDB[index], ConvertTableComps(comps, IndexTintCompsToNumber(compTints)))
 
 				FreezeEntityPosition(PlayerPedId(), false)
 				ClearPedTasks(PlayerPedId())
+
 				if DoesCamExist(Cam) then
+					RenderScriptCams(false, true, 1000, 1, 0)
 					DestroyCam(Cam, true)
 				end
 
@@ -194,9 +174,9 @@ function OutfitSubMenu(index, outfitId)
 				menu.close()
 				Wait(500)
 			elseif data.current.value == "delete" then
-                TriggerServerEvent("xakra_outfit:deleteOutfit", outfitId)
+                TriggerServerEvent("xakra_outfit:deleteOutfit", OutfitsDB[index].id)
                 OutfitsDB[index] = nil
-				PreviewOutfit(false)
+				PreviewOutfit(originalOutfit)
 				OutfitMenu()
 				Wait(500)
 			end
@@ -220,36 +200,89 @@ AddEventHandler('onResourceStop', function (resourceName)
     end
 end)
 
-CategoryDBName = {
-	Hat = 0x9925C067,
-	EyeWear = 0x5E47CA6,
-	Neckwear = 0x5FC29285,
-	NeckTies = 0x7A96FACA,
-	Shirt = 0x2026C46D,
-	Suspender = 0x877A2CF7,
-	Vest = 0x485EE834,
-	Coat = 0xE06D30CE,
-	CoatClosed = 0x0662AC34,
-	Poncho = 0xAF14310B,
-	Cloak = 0x3C1A74CD,
-	Glove = 0xEABE0032,
-	RingRh = 0x7A6BBD0B,
-	RingLh = 0xF16A1D23,
-	Bracelet = 0x7BC10759,
-	Gunbelt = 0x9B2C8B89,
-	Belt = 0xA6D134C6,
-	Buckle = 0xFAE9107F,
-	Holster = 0xB6B6122D,
-	Pant = 0x1D4C528A,
-	Skirt = 0xA0E3AB7F,
-	Boots = 0x777EC6EF,
-	Chap = 0x3107499B,
-	Spurs = 0x18729F39,
-	Spats = 0x514ADCEA,
-	Gauntlets = 0x91CE9B20,
-	Loadouts = 0x83887E88,
-	Accessories = 0x79D7DF96,
-	Satchels = 0x94504D26,
-	GunbeltAccs = 0xF1542D11,
-	Mask = 0x7505EF42,
+--########################### FUNCTIONS ###########################
+function PreviewOutfit(Outfit)
+	for i, tag in pairs(HashList) do
+		if i ~= 'Hair' and i ~= 'Beard' then
+			RemoveTagFromMetaPed(tag)
+			UpdatePedVariation()
+		end
+	end
+
+	local comps = {}
+
+    for k, v in pairs(Outfit.comps and json.decode(Outfit.comps) or {}) do
+        comps[k] = { comp = v }
+    end
+
+    local compTints = Outfit.compTints and json.decode(Outfit.compTints) or {}
+	
+	LoadComps(ConvertTableComps(comps, IndexTintCompsToNumber(compTints)))
+end
+
+function LoadComps(components, set)
+	for category, value in pairs(components) do
+		if value.comp ~= -1 then
+			local status = not set and "false" or GetResourceKvpString(tostring(value.comp))
+			if status == "true" then
+				RemoveTagFromMetaPed(Config.HashList[key])
+			else
+				ApplyShopItemToPed(value.comp, PlayerPedId())
+				if category ~= "Boots" then
+					UpdateShopItemWearableState(PlayerPedId(), `base`)
+				end
+				Citizen.InvokeNative(0xAAB86462966168CE, PlayerPedId(), 1)
+				UpdatePedVariation()
+				IsPedReadyToRender()
+				if value.tint0 ~= 0 or value.tint1 ~= 0 or value.tint2 ~= 0 or value.palette ~= 0 then
+					local TagData = GetMetaPedData(category == "Boots" and "boots" or category, PlayerPedId())
+					if TagData then
+						local palette = (value.palette ~= 0) and value.palette or TagData.palette
+						SetMetaPedTag(PlayerPedId(), TagData.drawable, TagData.albedo, TagData.normal, TagData.material, palette, value.tint0, value.tint1, value.tint2)
+						UpdatePedVariation(PlayerPedId())
+					end
+				end
+			end
+		end
+	end
+end
+
+HashList = {
+    Gunbelt     = 0x9B2C8B89,
+    Mask        = 0x7505EF42,
+    Holster     = 0xB6B6122D,
+    Loadouts    = 0x83887E88,
+    Coat        = 0xE06D30CE,
+    Cloak       = 0x3C1A74CD,
+    EyeWear     = 0x5E47CA6,
+    Bracelet    = 0x7BC10759,
+    Skirt       = 0xA0E3AB7F,
+    Poncho      = 0xAF14310B,
+    Spats       = 0x514ADCEA,
+    NeckTies    = 0x7A96FACA,
+    Spurs       = 0x18729F39,
+    Pant        = 0x1D4C528A,
+    Suspender   = 0x877A2CF7,
+    Glove       = 0xEABE0032,
+    Satchels    = 0x94504D26,
+    GunbeltAccs = 0xF1542D11,
+    CoatClosed  = 0x662AC34,
+    Buckle      = 0xFAE9107F,
+    RingRh      = 0x7A6BBD0B,
+    Belt        = 0xA6D134C6,
+    Accessories = 0x79D7DF96,
+    Shirt       = 0x2026C46D,
+    Gauntlets   = 0x91CE9B20,
+    Chap        = 0x3107499B,
+    NeckWear    = 0x5FC29285,
+    Boots       = 0x777EC6EF,
+    Vest        = 0x485EE834,
+    RingLh      = 0xF16A1D23,
+    Hat         = 0x9925C067,
+    Dress       = 0xA2926F9B,
+    Badge       = 0x3F7F3587,
+    armor       = 0x72E6EF74,
+    Hair        = 0x864B03AE,
+    Beard       = 0xF8016BCA,
+    bow         = 0x8E84A2AA,
 }

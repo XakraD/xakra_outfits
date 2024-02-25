@@ -4,8 +4,6 @@ Config.Align = 'top-left' -- align to menu
 
 Config.OpenMenu = 0xA1ABB953 -- G
 
-Config.OldCharacter = false -- true (Apply outfit with old vorp_chatacter) or false (Apply outfit with the new vorp_character-lua)
-
 Config.Objects = {
   'p_cabinet03x',
   'p_cabinet09x',
@@ -19,5 +17,3 @@ Config.Texts = {
   ['SelectOutfit'] = 'Seleccionar outfit',
   ['DeleteOutfit'] = 'Eliminar outfit',
 }
-
-
