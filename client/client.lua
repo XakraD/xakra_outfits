@@ -152,11 +152,19 @@ function OutfitSubMenu(index)
             end
 
 			if data.current.value == "select" then
+				OutfitsDB[index].comps = json.decode(OutfitsDB[index].comps)
+
+				if (not OutfitsDB[index].comps.Teeth or OutfitsDB[index].comps.Teeth == -1) and originalOutfit.comps.Teeth ~= -1 then
+					OutfitsDB[index].comps.Teeth = originalOutfit.comps.Teeth
+				end
+
 				local comps = {}
 
-				for k, v in pairs(OutfitsDB[index].comps and json.decode(OutfitsDB[index].comps) or {}) do
+				for k, v in pairs(OutfitsDB[index].comps) do
 					comps[k] = { comp = v }
 				end
+
+				OutfitsDB[index].comps = json.encode(OutfitsDB[index].comps)
 			
 				local compTints = OutfitsDB[index].compTints and json.decode(OutfitsDB[index].compTints) or {}
 
